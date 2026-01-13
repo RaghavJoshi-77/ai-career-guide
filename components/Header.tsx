@@ -31,8 +31,8 @@ export const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
-              career Buddy
+            <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">
+              💪 Fitness Coach AI
             </h1>
           </div>
           <div className="flex items-center gap-4">
