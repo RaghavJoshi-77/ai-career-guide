@@ -1,85 +1,116 @@
 import Groq from "groq-sdk";
-
 import { db } from "@/lib/db";
-import { messageTable } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import { userTable, messageTable } from "@/lib/schema";
+import { eq, desc } from "drizzle-orm";
+
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+const MENTZER_SYSTEM_PROMPT = `
+You are a helpful fitness coach heavily inspired by Mike Mentzer.
+Your Principles:
+1. Frequency: Work out once every 4-7 days.
+2. Volume: One working set per exercise to failure.
+3. Intensity: Absolute momentary muscular failure.
+4. Nutrition: High carb (60%), Moderate Protein (25%), Low Fat (15%). 300-500 calorie surplus.
+
+Tone: Blunt, intellectual, articulate, and slightly dismissive of "bro-science" and high-volume training.
+Quotes to embody:
+- "The facts of reality are not open to opinion."
+- "Anything less than failure is merely social hour."
+`;
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const userPrompt = body.prompt || "Hello";
+    const { prompt, chatId } = body;
 
-    const chatCompletion = await getGroqChatCompletion(userPrompt);
-    const content = chatCompletion.choices?.[0]?.message?.content || "";
-    console.log("Response:", content);
+    // 1. Validation
+    if (!prompt || !chatId) {
+      return new Response("Missing info", { status: 400 });
+    }
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        content,
+    // 2. Database Lookup & AUTO-REGISTRATION
+    let userId: number;
+
+    const existingUsers = await db
+      .select()
+      .from(userTable)
+      .where(eq(userTable.email, chatId))
+      .limit(1);
+
+    if (existingUsers.length > 0) {
+      // User exists, grab their ID
+      userId = existingUsers[0].id;
+    } else {
+      // === THE FIX: CREATE USER IF NOT FOUND ===
+      console.log(`User ${chatId} not found. Creating new user...`);
+      
+      const newUsers = await db.insert(userTable).values({
+        email: chatId,
+        // Since this is OAuth/AI chat, we set a dummy password to satisfy the "notNull" schema
+        password: "oauth-generated-placeholder", 
+      }).returning({ id: userTable.id });
+
+      userId = newUsers[0].id;
+      console.log(`✅ Created new user with ID: ${userId}`);
+    }
+
+    // 3. Fetch History (Standard logic)
+    const previousMessages = await db
+      .select()
+      .from(messageTable)
+      .where(eq(messageTable.chatId, chatId))
+      .orderBy(desc(messageTable.createdAt))
+      .limit(6);
+
+    const history = previousMessages.reverse().map((msg) => ({
+      role: msg.role as "user" | "assistant",
+      content: msg.content,
+    }));
+
+    const messagesPayload = [
+      { role: "system", content: MENTZER_SYSTEM_PROMPT },
+      ...history,
+      { role: "user", content: prompt },
+    ];
+
+    // 4. API Call
+    const chatCompletion = await groq.chat.completions.create({
+      messages: messagesPayload as any,
+      model: "llama-3.3-70b-versatile",
+      temperature: 0.7,
+    });
+
+    const aiResponse = chatCompletion.choices?.[0]?.message?.content || "";
+
+    // 5. Save & Respond
+    await Promise.all([
+      db.insert(messageTable).values({
+        userId,
+        chatId,
+        role: "user",
+        content: prompt,
+        createdAt: new Date(),
       }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  } catch (err) {
-    console.error(err);
+      db.insert(messageTable).values({
+        userId,
+        chatId,
+        role: "assistant",
+        content: aiResponse,
+        createdAt: new Date(),
+      }),
+    ]);
+
+    return new Response(JSON.stringify({ ok: true, content: aiResponse }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+
+  } catch (err: any) {
+    console.error("SERVER ERROR:", err);
     return new Response(
-      JSON.stringify({ ok: false, error: (err as Error).message || String(err) }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      JSON.stringify({ ok: false, error: err.message }),
+      { status: 500 }
     );
   }
-}
-
-export async function getGroqChatCompletion(prompt: string) {
-  return groq.chat.completions.create({
-    messages: [
-      {
-        role: "user",
-        content: ` Alright so you are a helpful fitness coach who is heavily inspired by Mike Mentzer and hos unorthodox approach of diet and training."
-        I am giving you some of his advice on excercise as following
-        1. Frequency: Extremely low. He eventually advocated for working out only once every 4 to 7 days (or even longer).
-            Volume: Low. Usually only one "working set" per exercise.
-
-            Intensity: Maximum. Every set must be taken to absolute momentary muscular failure.
-
-            The Split: His most famous consolidated routine looked like this:
-
-            Day 1: Chest, Back (e.g., Incline Press, Lat Pulldowns, Deadlifts).
-
-            Day 2: Rest (4–7 days).
-
-            Day 3: Legs, Abs (e.g., Leg Press, Leg Extensions, Calf Raises).
-
-            Day 4: Rest (4–7 days).
-
-            Day 5: Shoulders, Arms (e.g., Lateral Raises, Dips, Curls).   
-        2. His approach on nutrition and diet:
-                Caloric Balance: He believed that to gain muscle, you only needed a slight caloric surplus (about 300–500 calories above maintenance).
-
-                Nutrient Ratio: He famously advocated for a high-carbohydrate diet to fuel high-intensity sessions:
-
-                60% Carbohydrates (Complex carbs like oatmeal, potatoes, bran).
-
-                25% Protein (Meat, eggs, dairy).
-
-                15% Fats.
-
-                Logic: He argued that since the brain and muscles run on glucose, depleting carbs would make high-intensity training impossible.
-
-        3.Use the below speech so that you can replicate him in better manner so user can get good response:
-                1)"If you’re not willing to train to failure, you’re just wasting your time. It is the last rep—the one you think you cannot possibly complete—that triggers the growth mechanism in the body. Anything less is merely social hour."
-                2)"The facts of reality are not open to opinion. The human body has a specific physiology. If you ignore the need for recovery, you are ignoring the law of identity. You cannot grow if you are constantly tearing yourself down."
-        Here is the user prompt: "${prompt}
-        In your response be blunt, intellectual, and slightly dismissive of "bro-science."
-        `,
-      },
-    ],
-    model: "llama-3.3-70b-versatile",
-  });
 }
