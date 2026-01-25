@@ -1,7 +1,7 @@
 import Groq from "groq-sdk";
 import { db } from "@/lib/db";
 import { userTable, messageTable } from "@/lib/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc , asc} from "drizzle-orm";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -112,5 +112,67 @@ export async function POST(request: Request) {
       JSON.stringify({ ok: false, error: err.message }),
       { status: 500 }
     );
+  }
+}
+
+// ... (Your existing imports and POST function remain unchanged) ...
+
+// === ADD THIS NEW GET FUNCTION ===
+export async function GET(request: Request) {
+  try {
+    // 1. Get chatId from the URL (e.g., /api/groq-ai?chatId=test@gmail.com)
+    const { searchParams } = new URL(request.url);
+    const chatId = searchParams.get("chatId");
+
+    if (!chatId) {
+      return new Response(JSON.stringify({ error: "Missing chatId" }), { status: 400 });
+    }
+
+    // 2. Fetch all messages for this user, ordered by time
+    const history = await db
+      .select({
+        role: messageTable.role,
+        content: messageTable.content
+      })
+      .from(messageTable)
+      .where(eq(messageTable.chatId, chatId))
+      .orderBy(asc(messageTable.createdAt)); // Oldest first
+
+    // 3. Return the clean list
+    return new Response(JSON.stringify({ history }), {
+      status: 200, 
+      headers: { "Content-Type": "application/json" }
+    });
+
+  } catch (error) {
+    console.error("GET Error:", error);
+    return new Response(JSON.stringify({ error: "Failed to fetch history" }), { status: 500 });
+  }
+}
+
+
+
+// ... (imports and POST/GET functions remain unchanged) ...
+
+// === ADD THIS DELETE FUNCTION ===
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const chatId = searchParams.get("chatId");
+
+    if (!chatId) {
+      return new Response("Missing chatId", { status: 400 });
+    }
+
+    // Delete all messages matching the chatId
+    await db
+      .delete(messageTable)
+      .where(eq(messageTable.chatId, chatId));
+
+    return new Response(JSON.stringify({ ok: true }), { status: 200 });
+
+  } catch (err) {
+    console.error("DELETE Error:", err);
+    return new Response("Failed to delete history", { status: 500 });
   }
 }
