@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import bodybuilderImg from '@/public/bodybuilder.jpg';
+
 
 export default function Home() {
   return (
@@ -91,7 +93,7 @@ export default function Home() {
             {/* Placeholder image with gradient fade */}
             <div className="relative w-full h-full">
               <Image
-                src="/bodybuilder.jpg"
+                src={bodybuilderImg}
                 alt="Muscular athlete demonstrating high-intensity training"
                 fill
                 priority
