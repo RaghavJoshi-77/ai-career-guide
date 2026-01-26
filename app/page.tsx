@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   return (
@@ -89,10 +90,13 @@ export default function Home() {
           <div className="h-[50vh] md:h-[70vh] lg:h-[85vh] relative flex justify-center items-end mt-10 lg:mt-0">
             {/* Placeholder image with gradient fade */}
             <div className="relative w-full h-full">
-              <img
+              <Image
                 src="/bodybuilder.jpg"
                 alt="Muscular athlete demonstrating high-intensity training"
-                className="object-cover h-full w-full rounded-lg"
+                fill
+                priority
+                unoptimized
+                className="object-cover rounded-lg"
               />
               {/* Bottom gradient fade to black */}
               <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-black via-black to-transparent"></div>
