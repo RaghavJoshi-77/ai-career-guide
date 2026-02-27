@@ -16,8 +16,10 @@ export default function GuidePage() {
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [workoutPlan, setWorkoutPlan] = useState<any>(null);
+  const [dietPlan, setDietPlan] = useState<any>(null);
   // Track if we have fetched history to prevent double-loading
-  const [historyLoaded, setHistoryLoaded] = useState(false); 
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   const { data: session, status } = useSession();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -37,18 +39,25 @@ export default function GuidePage() {
   useEffect(() => {
     if (chatId && !historyLoaded) {
       setLoading(true);
-      axios
-        .get(`/api/groq-ai?chatId=${chatId}`)
-        .then((res) => {
-          const history = res.data.history || [];
+
+      // Fetch history and plans simultaneously
+      Promise.all([
+        axios.get(`/api/groq-ai?chatId=${chatId}`),
+        axios.get(`/api/plans/workout?email=${chatId}`).catch(() => ({ data: { plan: null } })),
+        axios.get(`/api/plans/diet?email=${chatId}`).catch(() => ({ data: { plan: null } }))
+      ])
+        .then(([historyRes, workoutRes, dietRes]) => {
+          const history = historyRes.data.history || [];
           if (history.length > 0) {
             setMessages(history);
           }
+          setWorkoutPlan(workoutRes.data.plan);
+          setDietPlan(dietRes.data.plan);
         })
-        .catch((err) => console.error("History fetch error:", err))
+        .catch((err) => console.error("Data fetch error:", err))
         .finally(() => {
-            setLoading(false);
-            setHistoryLoaded(true); // Mark as loaded so we don't re-fetch
+          setLoading(false);
+          setHistoryLoaded(true); // Mark as loaded so we don't re-fetch
         });
     }
   }, [chatId, historyLoaded]);
@@ -78,15 +87,24 @@ export default function GuidePage() {
 
     const currentPrompt = prompt;
     setPrompt("");
-    
+
     // Optimistic UI
     setMessages((prev) => [...prev, { role: "user", content: currentPrompt }]);
     setLoading(true);
 
+    let planContextStr = "";
+    if (workoutPlan || dietPlan) {
+      planContextStr = JSON.stringify({
+        workout: workoutPlan || "No active workout plan.",
+        diet: dietPlan || "No active diet plan."
+      });
+    }
+
     try {
-      const res = await axios.post("/api/groq-ai", { 
+      const res = await axios.post("/api/groq-ai", {
         prompt: currentPrompt,
-        chatId: chatId 
+        chatId: chatId,
+        planContext: planContextStr || undefined
       });
 
       if (res.status === 200 && res.data.ok) {
@@ -114,7 +132,7 @@ export default function GuidePage() {
       <div className="flex flex-col h-[calc(100vh-120px)] bg-black">
         {/* Background gradient effect */}
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-red-900/10 to-transparent pointer-events-none"></div>
-        
+
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-black relative z-10">
           <div className="max-w-3xl mx-auto space-y-6">
@@ -127,13 +145,12 @@ export default function GuidePage() {
             ) : (
               messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`px-6 py-4 rounded-2xl max-w-[85%] md:max-w-2xl ${
-                      msg.role === "user" 
-                        ? "bg-red-600 text-white rounded-br-none shadow-lg shadow-red-600/30 font-semibold" 
-                        : "bg-gray-900 text-gray-100 rounded-bl-none border border-gray-800 shadow-lg shadow-black/50"
+                  <div className={`px-6 py-4 rounded-2xl max-w-[85%] md:max-w-2xl ${msg.role === "user"
+                      ? "bg-red-600 text-white rounded-br-none shadow-lg shadow-red-600/30 font-semibold"
+                      : "bg-gray-900 text-gray-100 rounded-bl-none border border-gray-800 shadow-lg shadow-black/50"
                     }`}>
                     <div className="prose prose-invert prose-sm">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                     </div>
                   </div>
                 </div>
@@ -142,11 +159,11 @@ export default function GuidePage() {
             {/* Loading Indicator */}
             {loading && (
               <div className="flex justify-start">
-                 <div className="bg-gray-900 px-5 py-3 rounded-2xl rounded-bl-none border border-gray-800 flex items-center gap-2 shadow-lg shadow-black/50">
-                    <span className="text-xs text-gray-400 uppercase tracking-[0.2em] font-black">Thinking</span>
-                    <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"/>
-                    <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse delay-100"/>
-                 </div>
+                <div className="bg-gray-900 px-5 py-3 rounded-2xl rounded-bl-none border border-gray-800 flex items-center gap-2 shadow-lg shadow-black/50">
+                  <span className="text-xs text-gray-400 uppercase tracking-[0.2em] font-black">Thinking</span>
+                  <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
+                  <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse delay-100" />
+                </div>
               </div>
             )}
             <div ref={messagesEndRef} />

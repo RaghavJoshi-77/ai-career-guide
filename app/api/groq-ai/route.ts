@@ -28,7 +28,7 @@ When the user asks about something contrary to these principles, correct them fi
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { prompt, chatId } = body;
+    const { prompt, chatId, planContext } = body;
 
     // 1. Validation
     if (!prompt || !chatId) {
@@ -74,8 +74,12 @@ export async function POST(request: Request) {
       content: msg.content,
     }));
 
+    const dynamicSystemPrompt = planContext
+      ? `${MENTZER_SYSTEM_PROMPT}\n\n--- USER'S CURRENT PROTOCOL ---\n${planContext}\n---\nUse this data to give personalized coaching. Reference their specific exercises, sets, macros, etc.`
+      : MENTZER_SYSTEM_PROMPT;
+
     const messagesPayload = [
-      { role: "system", content: MENTZER_SYSTEM_PROMPT },
+      { role: "system", content: dynamicSystemPrompt },
       ...history,
       { role: "user", content: prompt },
     ];
