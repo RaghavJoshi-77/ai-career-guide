@@ -128,8 +128,8 @@ export default function OnboardingPage() {
                         {messages.map((msg, idx) => (
                             <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                                 <div className={`px-5 py-3 rounded-2xl max-w-[85%] ${msg.role === "user"
-                                        ? "bg-red-600 text-white rounded-br-none font-medium"
-                                        : "bg-gray-800 text-gray-200 rounded-bl-none border border-gray-700"
+                                    ? "bg-red-600 text-white rounded-br-none font-medium"
+                                    : "bg-gray-800 text-gray-200 rounded-bl-none border border-gray-700"
                                     }`}>
                                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                                 </div>

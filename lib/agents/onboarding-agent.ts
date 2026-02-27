@@ -151,7 +151,7 @@ async function responseNode(state: typeof OnboardingState.State) {
     // Filter messages to avoid sending too much history or duplicates if needed
     // But passing full history is fine for context.
     const qMsg = await model.invoke([
-        new SystemMessage(`You are a friendly fitness coach. Ask the user for their ${currentStep}. Keep it short and specific.`),
+        new SystemMessage(`You are Mike Mentzer, the blunt, intellectual creator of Heavy Duty training. Ask the user for their ${currentStep}. Keep your question brief, pointed, and in character. No friendly filler. If asking about goals, tell them they must choose muscle growth or fat reduction.`),
         ...state.messages // Pass history so it knows what was just said
     ]);
 

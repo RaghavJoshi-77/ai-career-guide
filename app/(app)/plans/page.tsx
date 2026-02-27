@@ -5,8 +5,6 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Header, HeaderSpacer } from "@/components/Header";
 import axios from "axios";
-import Link from "next/link";
-import ReactMarkdown from "react-markdown";
 
 export default function PlansPage() {
     const { data: session } = useSession();
@@ -14,6 +12,9 @@ export default function PlansPage() {
     const [dietPlan, setDietPlan] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [generatingCta, setGeneratingCta] = useState<string | null>(null);
+    const [deletingCta, setDeletingCta] = useState<string | null>(null);
+
+    const isBusy = !!generatingCta || !!deletingCta;
 
     useEffect(() => {
         if (session?.user?.email) {
@@ -39,7 +40,6 @@ export default function PlansPage() {
     const generatePlan = async (type: "workout" | "diet") => {
         if (!session?.user?.email) return;
         setGeneratingCta(type);
-
         try {
             await axios.post(`/api/plans/${type}`, { email: session.user.email });
             await fetchPlans();
@@ -49,6 +49,37 @@ export default function PlansPage() {
         } finally {
             setGeneratingCta(null);
         }
+    };
+
+    const deletePlan = async (type: "workout" | "diet") => {
+        if (!session?.user?.email) return;
+        if (!confirm(`Delete your ${type} plan? This cannot be undone.`)) return;
+        setDeletingCta(type);
+        try {
+            await axios.delete(`/api/plans/${type}?email=${session.user.email}`);
+            if (type === "workout") setWorkoutPlan(null);
+            else setDietPlan(null);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to delete plan.");
+        } finally {
+            setDeletingCta(null);
+        }
+    };
+
+    const regeneratePlan = async (type: "workout" | "diet") => {
+        if (!session?.user?.email) return;
+        setDeletingCta(type);
+        try {
+            await axios.delete(`/api/plans/${type}?email=${session.user.email}`);
+            if (type === "workout") setWorkoutPlan(null);
+            else setDietPlan(null);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setDeletingCta(null);
+        }
+        await generatePlan(type);
     };
 
     if (loading) return <div className="h-screen bg-black text-white flex items-center justify-center">Loading Protocol...</div>;
@@ -63,13 +94,13 @@ export default function PlansPage() {
                     {/* Header */}
                     <div>
                         <h1 className="text-4xl font-black text-red-600 tracking-tighter uppercase mb-2">My Protocol</h1>
-                        <p className="text-gray-400">Your personalized High Intensity Training & Nutrition blueprint.</p>
+                        <p className="text-gray-400">Your personalized Heavy Duty Training & Nutrition blueprint.</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-8">
 
-                        {/* Workout Section */}
-                        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 md:p-8 relative overflow-hidden group">
+                        {/* ── WORKOUT CARD ── */}
+                        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 md:p-8 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-6 opacity-10 font-black text-6xl text-gray-700 select-none">HIT</div>
                             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
                                 <span>🏋️</span> TRAINING
@@ -80,35 +111,33 @@ export default function PlansPage() {
                                     <p className="text-gray-500">No active training plan found.</p>
                                     <button
                                         onClick={() => generatePlan("workout")}
-                                        disabled={!!generatingCta}
+                                        disabled={isBusy}
                                         className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold transition-all disabled:opacity-50"
                                     >
-                                        {generatingCta === "workout" ? "Designing Strategy..." : "Generate HIT Plan"}
+                                        {generatingCta === "workout" ? "⏳ Designing Strategy..." : "Generate HIT Plan"}
                                     </button>
                                 </div>
                             ) : (
-                                <div className="space-y-6">
+                                <div className="space-y-5">
                                     <div>
                                         <h3 className="text-xl font-bold text-white mb-1">{workoutPlan.planName}</h3>
                                         <p className="text-sm text-red-500 font-mono uppercase tracking-widest">
-                                            {workoutPlan.frequency} • {workoutPlan.split} • {workoutPlan.durationWeeks} Weeks
+                                            {workoutPlan.frequency} • {workoutPlan.split} • {workoutPlan.durationWeeks || workoutPlan.duration} Weeks
                                         </p>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        {workoutPlan.exercises.slice(0, 3).map((day: any, i: number) => (
+                                    <div className="space-y-3">
+                                        {(workoutPlan.exercises || []).slice(0, 3).map((day: any, i: number) => (
                                             <div key={i} className="bg-black/40 rounded-xl p-4 border border-gray-800">
                                                 <div className="flex justify-between items-center mb-3">
                                                     <h4 className="font-bold text-gray-200">{day.dayName}</h4>
                                                     <span className="text-xs bg-gray-800 px-2 py-1 rounded text-red-400 border border-red-900/30">{day.focus}</span>
                                                 </div>
                                                 <ul className="space-y-2 text-sm text-gray-400">
-                                                    {day.exercises.map((ex: any, j: number) => (
+                                                    {(day.exercises || []).map((ex: any, j: number) => (
                                                         <li key={j} className="flex justify-between border-b border-gray-800/50 pb-1 last:border-0">
                                                             <span>{ex.name}</span>
-                                                            <span className="text-gray-500">
-                                                                {ex.sets} x {ex.reps}
-                                                            </span>
+                                                            <span className="text-gray-500">{ex.sets} x {ex.reps}</span>
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -116,8 +145,26 @@ export default function PlansPage() {
                                         ))}
                                     </div>
 
-                                    {/* Video Feature Placeholder */}
-                                    <div className="mt-4 pt-4 border-t border-gray-800">
+                                    {/* Action Buttons */}
+                                    <div className="flex gap-3 pt-3 border-t border-gray-800">
+                                        <button
+                                            onClick={() => regeneratePlan("workout")}
+                                            disabled={isBusy}
+                                            className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                        >
+                                            {(generatingCta === "workout" || deletingCta === "workout") ? "⏳ Working..." : "↺ Regenerate Plan"}
+                                        </button>
+                                        <button
+                                            onClick={() => deletePlan("workout")}
+                                            disabled={isBusy}
+                                            className="flex-1 bg-transparent border border-gray-700 hover:border-red-700 text-gray-400 hover:text-red-400 py-2.5 rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                        >
+                                            {deletingCta === "workout" ? "Deleting..." : "🗑 Delete Plan"}
+                                        </button>
+                                    </div>
+
+                                    {/* Video Placeholders */}
+                                    <div className="pt-2 border-t border-gray-800">
                                         <p className="text-xs text-gray-500 mb-2 font-mono uppercase">Reference Library</p>
                                         <div className="grid grid-cols-3 gap-2">
                                             <div className="bg-gray-800/50 aspect-video rounded-lg flex items-center justify-center text-xs text-gray-600">Video 1</div>
@@ -129,7 +176,7 @@ export default function PlansPage() {
                             )}
                         </div>
 
-                        {/* Diet Section */}
+                        {/* ── DIET CARD ── */}
                         <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 md:p-8 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-6 opacity-10 font-black text-6xl text-gray-700 select-none">FUEL</div>
                             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
@@ -141,15 +188,15 @@ export default function PlansPage() {
                                     <p className="text-gray-500">No active diet plan found.</p>
                                     <button
                                         onClick={() => generatePlan("diet")}
-                                        disabled={!!generatingCta}
+                                        disabled={isBusy}
                                         className="bg-gray-700 hover:bg-gray-600 text-white px-8 py-3 rounded-xl font-bold transition-all disabled:opacity-50"
                                     >
-                                        {generatingCta === "diet" ? "Calculating Macros..." : "Generate Diet Plan"}
+                                        {generatingCta === "diet" ? "⏳ Calculating Macros..." : "Generate Diet Plan"}
                                     </button>
                                 </div>
                             ) : (
-                                <div className="space-y-8">
-                                    {/* Macro Ring/Highlights */}
+                                <div className="space-y-6">
+                                    {/* Macro Highlights */}
                                     <div className="grid grid-cols-4 gap-2 text-center bg-black/40 p-4 rounded-xl border border-gray-800">
                                         <div>
                                             <div className="text-xs text-gray-500 uppercase tracking-widest mb-1">Cals</div>
@@ -171,7 +218,7 @@ export default function PlansPage() {
 
                                     <div className="space-y-3">
                                         <h3 className="font-bold text-gray-300 text-sm uppercase tracking-wide">Daily Sample</h3>
-                                        {dietPlan.meals.map((meal: any, i: number) => (
+                                        {(dietPlan.meals || []).map((meal: any, i: number) => (
                                             <div key={i} className="flex gap-4 items-start border-b border-gray-800 pb-3 last:border-0 text-sm">
                                                 <div className="w-16 pt-1 text-xs text-gray-500 bg-gray-800/20 px-2 py-1 rounded text-center">
                                                     {meal.time || `Meal ${i + 1}`}
@@ -179,7 +226,7 @@ export default function PlansPage() {
                                                 <div className="flex-1">
                                                     <div className="font-bold text-gray-200">{meal.name}</div>
                                                     <div className="text-gray-400 text-xs mt-1">
-                                                        {meal.items.map((it: any) => it.name).join(", ")}
+                                                        {(meal.items || []).map((it: any) => it.name).join(", ")}
                                                     </div>
                                                 </div>
                                                 <div className="text-xs font-mono text-gray-500 pt-1">
@@ -187,6 +234,24 @@ export default function PlansPage() {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="flex gap-3 pt-3 border-t border-gray-800">
+                                        <button
+                                            onClick={() => regeneratePlan("diet")}
+                                            disabled={isBusy}
+                                            className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2.5 rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                        >
+                                            {(generatingCta === "diet" || deletingCta === "diet") ? "⏳ Working..." : "↺ Regenerate Plan"}
+                                        </button>
+                                        <button
+                                            onClick={() => deletePlan("diet")}
+                                            disabled={isBusy}
+                                            className="flex-1 bg-transparent border border-gray-700 hover:border-red-700 text-gray-400 hover:text-red-400 py-2.5 rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+                                        >
+                                            {deletingCta === "diet" ? "Deleting..." : "🗑 Delete Plan"}
+                                        </button>
                                     </div>
                                 </div>
                             )}

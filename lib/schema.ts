@@ -74,6 +74,7 @@ export const dietPlanTable = pgTable("diet_plan_table", {
   protein: integer("protein").notNull(),
   carbs: integer("carbs").notNull(),
   fats: integer("fats").notNull(),
+  //any type ko baad mai badal le 
   meals: json("meals").$type<any[]>().notNull(), // Array of meal objects
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

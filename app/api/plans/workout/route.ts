@@ -65,3 +65,23 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ plan: plans[0] || null });
 }
+
+export async function DELETE(req: NextRequest) {
+    try {
+        const { searchParams } = new URL(req.url);
+        const email = searchParams.get("email");
+
+        if (!email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const users = await db.select().from(userTable).where(eq(userTable.email, email));
+        if (users.length === 0) return NextResponse.json({ error: "User not found" }, { status: 404 });
+        const userId = users[0].id;
+
+        await db.delete(workoutPlanTable).where(eq(workoutPlanTable.userId, userId));
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        console.error("Delete Workout Plan Error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
