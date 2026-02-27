@@ -51,120 +51,142 @@ export default function Register() {
 
 
   return (
-    <div className="bg-black flex items-center justify-center py-10 px-6 min-h-screen">
-      <div className="w-full max-w-lg bg-gray-900 rounded-2xl purple-shadow border border-purple-500/20 p-6 relative overflow-hidden">
-        <div className="relative z-10 mb-6 text-center">
-          <h1 className="text-4xl font-bold mb-3 highlight-text font-poppins">Create Account</h1>
-          <p className="text-purple-300 text-lg font-medium">Join us today and get started</p>
+    <div className="bg-black min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md md:max-w-4xl">
+        <div className="bg-gray-900 shadow-2xl shadow-red-900/10 rounded-3xl overflow-hidden border border-gray-800 flex flex-col md:flex-row">
+
+          {/* Left Panel: Branding */}
+          <div className="hidden md:flex md:w-1/2 bg-black border-r border-gray-800 p-12 flex-col justify-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-red-900/10 to-transparent pointer-events-none"></div>
+
+            <div className="relative z-10">
+              <div className="font-black text-5xl tracking-tighter mb-6">
+                <span className="text-red-600">HEAVY</span>
+                <span className="text-white">DUTY</span>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-4">Start Your Journey</h2>
+              <ul className="space-y-4 text-gray-400 font-medium">
+                <li className="flex items-center gap-3">
+                  <span className="text-red-600 font-bold">✓</span> Personalized AI Coaching
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-red-600 font-bold">✓</span> Science-backed HIT Protocols
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-red-600 font-bold">✓</span> Optimized Nutrition Plans
+                </li>
+              </ul>
+            </div>
+            <div className="absolute bottom-6 left-6 w-24 h-24 border-b-4 border-l-4 border-red-600/30"></div>
+          </div>
+
+          {/* Right Panel: Form */}
+          <div className="w-full md:w-1/2 p-8 sm:p-12 flex flex-col justify-center bg-gray-900">
+
+            {/* Mobile Title */}
+            <div className="md:hidden font-black text-4xl tracking-tighter mb-8 text-center">
+              <span className="text-red-600">HEAVY</span>
+              <span className="text-white">DUTY</span>
+            </div>
+
+            <h2 className="text-3xl font-black text-white uppercase tracking-wider mb-2">Register</h2>
+            <p className="text-gray-400 mb-8 font-medium">Create your Heavy Duty account.</p>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2" htmlFor="email">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-black border border-gray-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-colors"
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2" htmlFor="password">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-black border border-gray-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-colors"
+                  placeholder="Create a password"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2" htmlFor="confirmPassword">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full bg-black border border-gray-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 transition-colors"
+                  placeholder="Confirm your password"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-widest py-4 rounded-xl shadow-lg shadow-red-600/20 transition-all transform hover:scale-[1.02] active:scale-[0.98] mt-6"
+              >
+                Create Account
+              </button>
+            </form>
+
+            <div className="mt-8">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-800"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-gray-900 text-gray-500 font-bold uppercase tracking-widest text-xs">Or continue with</span>
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-col sm:flex-row gap-4">
+                <button
+                  type="button"
+                  onClick={() => signIn("google", { callback: "/home" })}
+                  className="w-full flex justify-center items-center gap-2 bg-black border border-gray-800 hover:border-gray-600 text-white p-3 rounded-xl transition-colors font-medium"
+                >
+                  <img src="https://ucarecdn.com/8f25a2ba-bdcf-4ff1-b596-088f330416ef/" alt="Google" className="w-5 h-5" />
+                  Google
+                </button>
+                <button
+                  type="button"
+                  onClick={() => signIn("github", { callback: "/home" })}
+                  className="w-full flex justify-center items-center gap-2 bg-black border border-gray-800 hover:border-gray-600 text-white p-3 rounded-xl transition-colors font-medium"
+                >
+                  <img src="https://ucarecdn.com/be5b0ffd-85e8-4639-83a6-5162dfa15a16/" alt="GitHub" className="w-5 h-5 filter invert" />
+                  GitHub
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-8 text-center text-sm">
+              <p className="text-gray-400">
+                Already have an account?{" "}
+                <Link href="/sign-in" className="text-red-500 hover:text-red-400 font-bold hover:underline transition-colors uppercase tracking-wider">
+                  Sign In
+                </Link>
+              </p>
+            </div>
+
+          </div>
         </div>
-
-        <form onSubmit={handleSubmit} className="relative z-10 space-y-5">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-semibold text-purple-300 mb-2 uppercase tracking-wider"
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-4 py-3 text-white bg-gray-800 rounded-xl border-2 border-purple-500/30 focus:border-purple-400 focus:ring-4 focus:ring-purple-500/20 focus:outline-none transition-all duration-300 placeholder-gray-400 font-medium purple-glow"
-              placeholder="Enter your email"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-semibold text-purple-300 mb-2 uppercase tracking-wider"
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-4 py-3 text-white bg-gray-800 rounded-xl border-2 border-purple-500/30 focus:border-purple-400 focus:ring-4 focus:ring-purple-500/20 focus:outline-none transition-all duration-300 placeholder-gray-400 font-medium purple-glow"
-              placeholder="Create a password"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-semibold text-purple-300 mb-2 uppercase tracking-wider"
-            >
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="w-full px-4 py-3 text-white bg-gray-800 rounded-xl border-2 border-purple-500/30 focus:border-purple-400 focus:ring-4 focus:ring-purple-500/20 focus:outline-none transition-all duration-300 placeholder-gray-400 font-medium purple-glow"
-              placeholder="Confirm your password"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-lg font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-purple-500/25 hover:shadow-2xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 uppercase tracking-wide purple-shadow"
-          >
-            Create Account
-          </button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-purple-500/30"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-gray-900 text-purple-300 font-medium">Or continue with</span>
-            </div>
-          </div>
-
-          <div className="flex justify-center space-x-4">
-            <button
-              type="button"
-              onClick={() => signIn("google", { callback: "/home" })}
-              className="hover:scale-105 ease-in-out duration-300 shadow-lg p-3 rounded-xl bg-gray-800 border border-purple-500/30 hover:border-purple-400 hover:shadow-purple-500/25"
-            >
-              <img
-                className="max-w-[25px]"
-                src="https://ucarecdn.com/8f25a2ba-bdcf-4ff1-b596-088f330416ef/"
-                alt="Google"
-              />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => signIn("github", { callback: "/home" })}
-              className="hover:scale-105 ease-in-out duration-300 shadow-lg p-3 rounded-xl bg-gray-800 border border-purple-500/30 hover:border-purple-400 hover:shadow-purple-500/25"
-            >
-              <img className="max-w-[25px]" src="https://ucarecdn.com/be5b0ffd-85e8-4639-83a6-5162dfa15a16/" alt="GitHub" />
-            </button>
-          </div>
-
-          <div className="text-center pt-4">
-            <p className="text-gray-400 mb-3 font-medium">Already have an account?</p>
-            <Link
-              href="/sign-in"
-              className="inline-block bg-transparent border-2 border-purple-500 text-purple-400 hover:bg-purple-500 hover:text-white text-lg font-semibold py-3 px-8 rounded-xl hover:shadow-lg hover:shadow-purple-500/25 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 uppercase tracking-wide"
-            >
-              Sign In
-            </Link>
-          </div>
-        </form>
-
-        <div className="absolute top-6 right-6 w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-        <div className="absolute bottom-6 left-6 w-2 h-2 bg-purple-400 rounded-full animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 right-4 w-1 h-8 bg-gradient-to-b from-purple-500 to-transparent rounded-full"></div>
       </div>
     </div>
   )
