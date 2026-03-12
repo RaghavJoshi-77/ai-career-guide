@@ -1,6 +1,6 @@
 
 import { ChatGroq } from "@langchain/groq";
-import { WorkoutPlanSchema, WorkoutPlan } from "@/lib/schemas/plan-schemas";
+import { WorkoutPlanSchema, WorkoutPlan, UserProfile } from "@/lib/schemas/plan-schemas";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 
 const model = new ChatGroq({
@@ -31,11 +31,11 @@ CRITICAL RULES:
 Do not deviate from these rules. Present the plan intellectually, stating the biological necessity of rest and the inverse relationship between volume and intensity.
 `;
 
-export async function generateWorkoutPlan(userProfile: Record<string, any>): Promise<WorkoutPlan> {
+export async function generateWorkoutPlan(userProfile: UserProfile): Promise<WorkoutPlan> {
     const userContext = `
     User Profile:
     - Age: ${userProfile.age}
-    - Gender: ${userProfile.gender}
+    - Gender: ${userProfile.gender}         
     - Weight: ${userProfile.weight}
     - Height: ${userProfile.height}
     - Goal: ${userProfile.fitnessGoal}

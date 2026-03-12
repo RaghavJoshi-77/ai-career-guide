@@ -50,5 +50,19 @@ export const DietPlanSchema = z.object({
     notes: z.string().describe("Dietary guidelines and tips"),
 });
 
+export const UserProfileSchema = z.object({
+    age: z.union([z.number(), z.string()]).nullable().optional(),
+    weight: z.string().nullable().optional(),
+    height: z.string().nullable().optional(),
+    gender: z.string().nullable().optional(),
+    fitnessGoal: z.string().nullable().optional(),
+    activityLevel: z.string().nullable().optional(),
+    experienceLevel: z.string().nullable().optional(),
+    injuries: z.string().nullable().optional(),
+    availableDays: z.string().nullable().optional(),
+    equipment: z.string().nullable().optional(),
+});
+
+export type UserProfile = z.infer<typeof UserProfileSchema>;
 export type WorkoutPlan = z.infer<typeof WorkoutPlanSchema>;
 export type DietPlan = z.infer<typeof DietPlanSchema>;

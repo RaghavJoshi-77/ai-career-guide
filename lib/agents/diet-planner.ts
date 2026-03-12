@@ -1,6 +1,6 @@
 
 import { ChatGroq } from "@langchain/groq";
-import { DietPlanSchema, DietPlan } from "@/lib/schemas/plan-schemas";
+import { DietPlanSchema, DietPlan, UserProfile } from "@/lib/schemas/plan-schemas";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 
 const model = new ChatGroq({
@@ -17,16 +17,16 @@ function parseNum(val: string): number {
     return match ? parseFloat(match[0]) : 0;
 }
 
-function calculateMacros(profile: Record<string, any>) {
-    let weight = parseNum(profile.weight); // assume kg if not specified, or robustly handle
-    let height = parseNum(profile.height); // assume cm
-    let age = parseNum(profile.age);
+function calculateMacros(profile: UserProfile) {
+    let weight = parseNum(profile.weight?.toString() || "0"); // assume kg if not specified, or robustly handle
+    let height = parseNum(profile.height?.toString() || "0"); // assume cm
+    let age = parseNum(profile.age?.toString() || "0");
     const gender = profile.gender?.toLowerCase() || "male";
 
     // Simple heuristic: if weight > 1000, probably lbs -> convert to kg (roughly)
     // Realistically, would need strict units. For now, let's assume standard metric or convert.
     // If input is "180 lbs", parseNum gets 180.
-    if (profile.weight.toLowerCase().includes("lb")) {
+    if (profile.weight?.toLowerCase().includes("lb")) {
         weight = weight * 0.453592;
     }
     // If input "5'10"", robust parsing needed. 
@@ -51,7 +51,7 @@ CRITICAL NUTRITION RULES:
 First calculate their maintenance calories (TDEE), determine the goal (caloric surplus/deficit), then lay out the macros and a sample daily meal plan.
 `;
 
-export async function generateDietPlan(userProfile: Record<string, any>): Promise<DietPlan> {
+export async function generateDietPlan(userProfile: UserProfile): Promise<DietPlan> {
     const userContext = `
     User Profile:
     - Age: ${userProfile.age}
@@ -60,7 +60,7 @@ export async function generateDietPlan(userProfile: Record<string, any>): Promis
     - Height: ${userProfile.height}
     - Goal: ${userProfile.fitnessGoal} (e.g. "Build Muscle" implies surplus, "Lose Fat" implies deficit)
     - Activity Level: ${userProfile.activityLevel}
-    - Dietary Restrictions: None (unless specified in injuries/notes: ${userProfile.injuries || "None"})
+    - Injuries/Notes: ${userProfile.injuries || "None"}
     `;
 
     try {
